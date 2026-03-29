@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI, UploadFile, File, Request
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
 from gemini_functions import initialize_inventory as gemini_initialize_inventory
@@ -113,3 +113,15 @@ def delete_all_tools():
     conn.commit()
     conn.close()
     return {"message": "All tools deleted"}
+
+@app.post("/upload-image")
+async def upload_image(request: Request):
+    data = await request.body()
+    
+    filename = f"{datetime.now().strftime('%Y%m%d_%H%M%S')}.jpg"
+    path = os.path.join(UPLOAD_DIR, filename)
+    
+    with open(path, "wb") as f:
+        f.write(data)
+        
+    return {"message": "Image uploaded successfully", "filename": filename, "bytes": len(data)}

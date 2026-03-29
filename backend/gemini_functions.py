@@ -32,7 +32,7 @@ def initialize_inventory(image_path: str):
             {
                 "name": "hammer",
                 "present": true,
-                box_2d: [ymin, xmin, ymax, xmax]
+                "box_2d": [ymin, xmin, ymax, xmax]
             }
         ]
     }
