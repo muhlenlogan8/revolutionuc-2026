@@ -1,9 +1,13 @@
 from fastapi import FastAPI, UploadFile, File, Request
+from fastapi.responses import StreamingResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
 from database import get_connection
 from gemini_functions import initialize_inventory as gemini_initialize_inventory
 from gemini_functions import check_inventory as gemini_check_inventory
 from datetime import datetime
+import io
+import time
+import threading
 import shutil
 import os
 
@@ -19,6 +23,45 @@ app.add_middleware(
 
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+frame_count = 0
+last_timestamp = None
+
+def generate_frames():
+    global frame_count, last_timestamp
+    while True:
+        with frame_lock:
+            frame = latest_frame
+
+        if frame is not None:
+            frame_count += 1
+            last_timestamp = time.strftime('%Y-%m-%d %H:%M:%S')
+
+            # MJPEG stream format
+            yield (
+                b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' +
+                frame +
+                b'\r\n'
+            )
+        time.sleep(0.05)  # ~20fps max
+
+# MJPEG stream endpoint
+@app.get("/camera/stream")
+def camera_stream():
+    return StreamingResponse(
+        generate_frames(),
+        media_type="multipart/x-mixed-replace;boundary=frame"
+    )
+
+# Metadata endpoint — plugs into your existing status/count/timestamp display
+@app.get("/camera/status")
+def camera_status():
+    return JSONResponse({
+        "status": "active" if latest_frame is not None else "no signal",
+        "count": frame_count,
+        "timestamp": last_timestamp
+    })
 
 @app.get("/tools")
 def get_tools():
