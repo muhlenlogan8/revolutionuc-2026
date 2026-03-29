@@ -4,6 +4,40 @@ const App = () => {
 	const [tools, setTools] = useState([]);
 	const [toolsChanged, setToolsChanged] = useState(false);
 
+	const BACKEND_URL = "http://localhost:9000";
+
+	export default function CameraFeed() {
+  		const [status, setStatus] = useState({});
+
+  		// Poll metadata to update your existing status/count/timestamp display
+  		useEffect(() => {
+    		const interval = setInterval(async () => {
+      			const res = await fetch(`${BACKEND_URL}/camera/status`);
+      			const data = await res.json();
+      			setStatus(data);
+    		}, 1000);
+    		return () => clearInterval(interval);
+  		}, []);
+
+  		return (
+    		<div>
+      			{/* MJPEG stream — browser handles this natively */}
+      				<img
+        				src={`${BACKEND_URL}/camera/stream`}
+        				alt="Nicla Vision Feed"
+        				style={{ width: '640px', height: 'auto', border: '1px solid #ccc' }}
+      				/>
+
+      				{/* Plugs into your existing display components */}
+      				<div>
+        				<p>Status: {status.status}</p>
+        				<p>Frame Count: {status.count}</p>
+        				<p>Timestamp: {status.timestamp}</p>
+      				</div>
+    			</div>
+  			);
+		}
+
 	useEffect(() => {
 		fetch("http://127.0.0.1:8000/tools")
 			.then((res) => res.json())
